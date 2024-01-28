@@ -1,5 +1,5 @@
 ---
-- name: Installing java 
+- name: Installing java
   yum:
     name: "{{ item }}"
     state: latest
@@ -12,7 +12,7 @@
     path: /usr/local/apache-maven/apache-maven-{{ maven_version }}
     state: directory
 
-- name: Download & Install maven 
+- name: Download & Install maven
   unarchive:
     src: https://downloads.apache.org/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz
     dest: /usr/local/apache-maven/apache-maven-{{ maven_version }}
@@ -27,26 +27,26 @@
 - name: Refresh environment variables
   shell: source /etc/profile.d/maven.sh
 
-- name: Create application folder 
+- name: Create application folder
   file:
     path: "{{ app_path }}"
     state: directory
 
-- name: Configure java app service 
+- name: Configure java app service
   template:
     src: javaservice.j2
     dest: /etc/systemd/system/{{ app_name }}.service
 
-- name: Clone git code 
+- name: Clone git code
   git:
     repo: "{{ app_git_url }}"
     dest: /tmp/{{ app_name }}
   register: git_clone_status
 
-- name: Maven build 
+- name: Maven build
   shell: source /etc/profile.d/maven.sh && mvn --quiet clean install
   args:
-     chdir: "/tmp/{{ app_name }}"  
+     chdir: "/tmp/{{ app_name }}"
   when: git_clone_status.changed
   register: mvn_build_status
 
@@ -72,7 +72,4 @@
     daemon_reload: true
     state: restarted
   when: artifact_status.changed
-
-
-
 
