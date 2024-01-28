@@ -1,16 +1,22 @@
 ---
 - name: Installing java 
   yum:
-    name: {{ item }}
-	state: latest
+    name: "{{ item }}"
+    state: latest
   loop:
-    - java-11-openjdk-devel
-    - git 
+    - "java-11"
+    - "git"
+
+- name: Create maven config folder
+  file:
+    path: /usr/local/apache-maven/apache-maven-{{ maven_version }}
+    state: directory
 
 - name: Download & Install maven 
   unarchive:
     src: https://downloads.apache.org/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz
     dest: /usr/local/apache-maven/apache-maven-{{ maven_version }}
+    extra_opts: [--strip-components=1]
     remote_src: yes
 
 - name: Configure maven home and environment variables
@@ -23,7 +29,7 @@
 
 - name: Create application folder 
   file:
-    path: {{ app_path }}
+    path: "{{ app_path }}"
     state: directory
 
 - name: Configure java app service 
@@ -33,27 +39,36 @@
 
 - name: Clone git code 
   git:
-    repo: {{ app_git_url }}
+    repo: "{{ app_git_url }}"
     dest: /tmp/{{ app_name }}
   register: git_clone_status
 
 - name: Maven build 
-  shell: mvn --quiet clean install
+  shell: source /etc/profile.d/maven.sh && mvn --quiet clean install
   args:
      chdir: "/tmp/{{ app_name }}"  
   when: git_clone_status.changed
   register: mvn_build_status
 
+- name: Find the jar file
+  find:
+    path: /tmp/{{ app_name }}/target/
+    patterns: '*.jar'
+  register: file_name
+
+#- debug: msg="{{ file_name.files[0].path }}"
+
 - name: copy artifact to app folder
   copy:
-    src: "/tmp/{{ app_name }}/target/*.jar" 
+    src: "{{ file_name.files[0].path }}"
     dest: "{{ app_path }}/app.jar"
+    remote_src: yes
   when: mvn_build_status.changed
   register: artifact_status
 
 - name: Start application
-  systemd_service:
-    name: {{ app_name }}
+  systemd:
+    name: "{{ app_name }}"
     daemon_reload: true
     state: restarted
   when: artifact_status.changed
