@@ -1,0 +1,17 @@
+---
+- name: Installing and configuring java for app1
+  hosts: server2
+  vars:
+    maven_version: 3.8.8
+    app_name: "app1-java"
+    app_jar_path: /opt/{{ app_name }}/app.jar
+  roles:
+    - java 
+
+
+-- things to do 
+
+app_git_url
+app_name
+app_path
+
